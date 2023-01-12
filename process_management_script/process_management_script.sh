@@ -24,12 +24,12 @@
 # simply changing the name of the variable)
 #
 ## Let's set some global variables ##
-SCRIPT_NAME="main_script.sh"		# Script name 
+SCRIPT_NAME="process_management_script.sh"		# Script name 
 USER=$(whoami)				# Getting the user who is running the script
-FULL_PATH=$(pwd)			# Getting full path where the script is
+FULL_PATH=$(pwd)			# Getting full path where the script is being executed
 DATE=`date +'%F'`			# Variable DATE for log file name. Ex: log-2022-09-30
 ## These two var can be edited as we wish ##
-LOG_DIR="$FULL_PATH/logs"		# The log file path should be configured using a variable
+LOG_DIR="${FULL_PATH}/logs"		# The log file path should be configured using a variable
 TARGET_SERVICE="httpd.service"		# The target service should be configured using a variable 
 
 ## Function to create LOG DIRECTORY ##
@@ -44,7 +44,7 @@ create_logs_directory () {
       if [[ $? -ne 0 ]]			# Validate if file was created correctly
       then
         # Logs for debugging
-        printf "Log created on: $(date)\nUsername: $USER\nMessage: Unable to create $FILE file\nPlease check if you have proper permissions on the selected folder $LOG_DIR\nExit status: 1\n\n" >> ${LOG_DIR}/debug.log
+        printf "Log created on: $(date)\nUsername: $USER\nMessage: Unable to create $FILE file\nPlease check if you have proper permissions on the selected folder $LOG_DIR\nExit status: 1\n\n"
         exit 1
       else
         # Logs for debugging
@@ -72,7 +72,7 @@ create_logs_directory () {
     if [[ $? -ne 0 ]]			# Validate if the log directory was created
     then
       # Logs for debugging
-      printf "Log created on: $(date)\nUsername: $USER\nMessage: Unable to create directory $LOG_DIR\nPlease check if you have proper permissions on the selected folder $FULL_PATH\nExit status: 1\n\n" >> $LOG_DIR/debug.log
+      printf "\nLog created on: $(date)\nUsername: $USER\nMessage: Unable to create directory $LOG_DIR\nPlease check if you have proper permissions on the selected folder $FULL_PATH\nExit status: 1\n\n"
       exit 1
     else
       # Logs for debugging
@@ -105,7 +105,7 @@ check_if_service_exists () {
     printf "Log created on: $(date)\nUsername: $USER\nMessage: Creating status logs for the $TARGET_SERVICE in log-$DATE file\nExit status: 0\n\n" >> $LOG_DIR/debug.log
   } # //end function logging
   
-  ## This function check if the selected service is running or stopped ##
+  ## This function checks if the selected service is running or stopped ##
   check_if_service_is_running () {
     # Logs for debugging
     printf "Log created on: $(date)\nUsername: $USER\nMessage: Running systemctl show -p SubState --value $1 to check if the target service is running\n" >> $LOG_DIR/debug.log
@@ -151,7 +151,7 @@ create_cronjob () {
   (crontab -l; echo "PATH=/sbin:/bin:/usr/sbin:/usr/bin") | awk '!x[$0]++' | crontab -	# Add PATH to crontab
   # Add this script to crontab
   (crontab -l; echo "# To monitor target service $TARGET_SERVICE") | crontab -
-  (crontab -l; echo "*/1 * * * * $FULL_PATH/$SCRIPT_NAME >> $LOG_DIR/log-$DATE 2>&1") | awk '!x[$0]++' | crontab -
+  (crontab -l; echo "*/5 * * * * $FULL_PATH/$SCRIPT_NAME >> $LOG_DIR/log-$DATE 2>&1") | awk '!x[$0]++' | crontab -
   
   # Logs for debugging
   printf "Log created on: $(date)\nUsername: $USER\nMessage: Adding the script ./job.sh as a cron job\nExit status: 0\n\n" >> $LOG_DIR/debug.log
