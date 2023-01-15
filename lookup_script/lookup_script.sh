@@ -42,7 +42,7 @@ echo -e "# you want to search for and this script will do the rest.\n"
 echo -e "You are here now: "
 echo -e "${ITALIC}$CURRENT_DIR${NO_FORMAT}\n"
 
-## Function to save the matches found in the files with the keywords to a RESULTS() array ##
+## Function to save the matches keywords found in files to RESULTS() array ##
 save_to_array () {
   
   # Add date to the beginning of array, just for informative purpose
@@ -133,7 +133,7 @@ search_in_files () {
   
 }
 
-### Function to search for keywords in every directory file recursively ###
+### Function to search for keywords in every file in selected directory recursively ###
 search_in_directory () {	
   
   # To search for files recursively in selected directory
