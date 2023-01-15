@@ -17,11 +17,11 @@
 # path where the script is executed.
 
 ## Setting some vars ##
-CURRENT_DIR=$(pwd)                    # Actual directory where the script is being executed
-DATE=$(date +'%F')			              # Variable DATE for "results" file name. Ex: result-2022-09-30.log
-RESULTS=()				                    # Array for storing matches keyword found in files
+CURRENT_DIR=$(pwd)                    # Actual directory where the script is placed
+DATE=$(date +'%F')			              # To add date to "results" file name. Ex: results-2022-01-12.log
+RESULTS=()				                    # Array to save matches keyword found in files
 KEYWORDS=()				                    # Array for storing words to search
-NUMBER_OF_ROWS=""			                # Number of row found that matches search keyword
+NUMBER_OF_ROWS=""			                # Number of row found that matches keywords in file
 SELECTED_DIR=""                       # Directory that has been selected by user and different from "current dir"
 FULL_PATH=""                          # Var that includes full path and file name
 
