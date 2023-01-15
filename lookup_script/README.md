@@ -4,7 +4,7 @@ This project is a base test to check your shells scripting capabilities.
 
 ## Table of content
 
--  Process management script
+-  Lookup script
     - Overview
     - Requirements
     - How it works (Documentation)
