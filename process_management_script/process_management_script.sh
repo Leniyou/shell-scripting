@@ -23,139 +23,225 @@
 # (so if we want to change the target process, we can do it by
 # simply changing the name of the variable)
 #
-## Let's set some global variables ##
-SCRIPT_NAME="process_management_script.sh"		# Script name 
-USER=$(whoami)				# Getting the user who is running the script
-FULL_PATH=$(pwd)			# Getting full path where the script is being executed
-DATE=`date +'%F'`			# Variable DATE for log file name. Ex: log-2022-09-30
-## These two var can be edited as we wish ##
-LOG_DIR="${FULL_PATH}/logs"		# The log file path should be configured using a variable
-TARGET_SERVICE="httpd.service"		# The target service should be configured using a variable 
+### Let's set some global variables ###
+SCRIPT_NAME=$(basename "$0")	      # Script name 
+USER=$(whoami)					            # Getting the user who is running the script
+FULL_PATH=$(pwd)				            # Getting full path where the script is
+DATE=$(date +'%F')				          # Variable DATE for log file name. e.g.: log-2022-09-30
 
-## Function to create LOG DIRECTORY ##
-create_logs_directory () {
+### These two var can be edited as user wish ###
+LOG_DIR="${FULL_PATH}/logs"			    # The log file path should be configured using a variable
+TARGET_SERVICE="httpd.service"			# The target service should be configured using a variable 
 
-  ## Function to create LOG FILES ##
-  create_log_files () {
-  
-    ## Function to validate if LOG FILES were created correctly ##
-    validate_log_file () {
-      local FILE=$1
-      if [[ $? -ne 0 ]]			# Validate if file was created correctly
-      then
-        # Logs for debugging
-        printf "Log created on: $(date)\nUsername: $USER\nMessage: Unable to create $FILE file\nPlease check if you have proper permissions on the selected folder $LOG_DIR\nExit status: 1\n\n"
-        exit 1
-      else
-        # Logs for debugging
-        printf "Log created on: $(date)\nUsername: $USER\nMessage: $FILE file was created successfully with touch command in the selected folder $LOG_DIR\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-      fi
-    } # //end function validate_log_file
-  
-    #  We are going to create two log files
-    #  - debug.log => to store logs regarding the functionality of this self script
-    #  - log-date => to store logs related to the target service
-    if [[ ! -f $LOG_DIR/debug.log ]]
-    then
-      touch $LOG_DIR/debug.log		# Creating debug.log file
-      validate_log_file debug.log	# Validate if file was created correctly
-    fi
-    if [[ ! -f $LOG_DIR/log-$DATE ]]
-    then
-      touch $LOG_DIR/log-$DATE		# Creating log file
-      validate_log_file log-$DATE	# Validate if file was created correctly
-    fi
-  } # //end function create_log_files
-  
-  ## Function to validate if LOG DIRECTORY was created correctly ##
-  validate_logs_directory () {
-    if [[ $? -ne 0 ]]			# Validate if the log directory was created
-    then
-      # Logs for debugging
-      printf "\nLog created on: $(date)\nUsername: $USER\nMessage: Unable to create directory $LOG_DIR\nPlease check if you have proper permissions on the selected folder $FULL_PATH\nExit status: 1\n\n"
-      exit 1
-    else
-      # Logs for debugging
-      printf "Log created on: $(date)\nUsername: $USER\nMessage: Command mkdir $LOG_DIR executed successfully\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-    fi
-  } # //end function validate_log_directory
-  
-  if [[ ! -d $LOG_DIR ]]		# We check if the directory is not created
+## To check if the log directory is not created ##
+if [[ ! -d $LOG_DIR ]];		
+then
+  if ! mkdir "$LOG_DIR";
   then
-    mkdir $LOG_DIR			# Creating the Logs directory
-    validate_logs_directory $?		# Validating if an error occurred
-  fi
-  create_log_files			# We call this function to create log files
-} # //end function create_log_directory
-
-create_logs_directory			# We call this function to create log directory
-
-## This function check if the selected service exists on the host machine ##
-check_if_service_exists () {
-
-  ## Function to log data in LOG FILE ##
-  logging () {
-    # Logging information about the target service
-    local ACTIVE_STATUS=$(systemctl status $TARGET_SERVICE | grep "Active")
-    local MAIN_PID=$(systemctl status $TARGET_SERVICE | grep "Main PID")
-    local LOGS=$(systemctl status --no-pager -l $TARGET_SERVICE | grep "systemd")
-    # Logs for logging 
-    printf "Log generated on: $(date)\nUsername: $USER\nService name: $TARGET_SERVICE\nActive status: $ACTIVE_STATUS\nMain Process ID: $MAIN_PID\nLogs: $LOGS\n\n"
-    # Logs for debugging
-    printf "Log created on: $(date)\nUsername: $USER\nMessage: Creating status logs for the $TARGET_SERVICE in log-$DATE file\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-  } # //end function logging
-  
-  ## This function checks if the selected service is running or stopped ##
-  check_if_service_is_running () {
-    # Logs for debugging
-    printf "Log created on: $(date)\nUsername: $USER\nMessage: Running systemctl show -p SubState --value $1 to check if the target service is running\n" >> $LOG_DIR/debug.log
-    local STATUS=$(systemctl show -p SubState --value "$1")	# This variable is used to check if the service is running
-    if [[ $STATUS == "running" ]]				# Returned value should be "running"
-    then
-      # Logs for debugging
-      printf "Message: The $1 is Runinng/Active\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-    else
-      # # Logs for debugging
-      printf "Message: The $1 is Stopped/Inactive (dead)\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-    fi
+    # If there is an error creating directory script will exit status 1
     
-    logging				# We call this function to star loggind data to LOG FILE
-  } # //end function check_if_service_running
-  
-  # Logs for debugging
-  printf "Log created on: $(date)\nUsername: $USER\nMessage: The $1 has been selected as the target service\n" >> $LOG_DIR/debug.log
-  printf "Message: Running systemctl list-unit-files | grep -q $1 to check if the service exists\n" >> $LOG_DIR/debug.log
-  
-  systemctl list-unit-files | grep -q "$1"	
-  if  [[ $? -eq 0 ]]				# equal to 0 means the service exists
-  then
-    # Logs for debugging
-    printf "Message: The $1 exists on this workstation\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-    check_if_service_is_running $1		# If the service exists now we will check if it is running
-  else
-    echo "The selected service $1 does not exist or it is not enabled on this workstation, further information can be found on $LOG_DIR/debug.log file"
-    # Logs for debugging
-    printf "Message: The $1 does not exist or it is not enabled on this workstation\n" >> $LOG_DIR/debug.log
-    printf "Message: Please spell check the service name you just typed or verify the list of installed services running the next command: systemctl --all --type service\n" >> $LOG_DIR/debug.log
-    printf "Exit status: 1\n\n" >> $LOG_DIR/debug.log
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Error: Unable to create log directory %s\n" "$LOG_DIR"
+    printf "Recommendation: Please check if you have proper permissions on the selected folder %s\n" "$FULL_PATH"
+    printf "Exit status: 1\n"
+
+    # Exit script
     exit 1
+
+  else
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message: log dir %s\n" "$LOG_DIR"
+    printf "Created successfully in folder %s\n" "$FULL_PATH"
+    printf "Exit status: 0\n"
   fi
-} # //end function check_if_service_exists
+fi
 
-check_if_service_exists $TARGET_SERVICE		# We call this function to check if service exists
+## Now script will create debug.log file ##
+# for logging information about commands ran by the script
+if [[ ! -f "$LOG_DIR"/debug.log ]];
+then
+  # If debug.log file is not created already
+  # Then create it
+  if ! touch "$LOG_DIR"/debug.log;
+  then
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Error: Unable to create file %s\n" "debug.log"
+    printf "Recommendation: Please check if you have proper permissions on the selected folder %s\n" "$LOG_DIR"
+    printf "Exit status: 1\n"
 
-## Function to add this script as a cronjob on crontab
-create_cronjob () {
+    # Exit script
+    exit 1   
+
+  else
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message: Log file debug.log\n"
+    printf "Created successfully in %s\n" "$LOG_DIR"
+    printf "Exit status: 0\n"
+
+  fi
+fi
+
+## Then, script will create log-date file ##
+# for logging information about selected target service
+if [[ ! -f "$LOG_DIR"/log-$DATE ]]
+then
+  # If log-date file is not created already
+  # Then create it
+  if ! touch "$LOG_DIR"/log-"$DATE";
+  then
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Error: Unable to create file %s\n" "log-${DATE}"
+    printf "Recommendation: Please check if you have proper permissions on the selected folder %s\n" "$LOG_DIR"
+    printf "Exit status: 1\n"
+
+    # Exit script
+    exit 1   
+
+  else
+    # Logs for debugging printed on terminal
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message: Log file %s\n" "log-${DATE}"
+    printf "Created successfully in %s\n" "$LOG_DIR"
+    printf "Exit status: 0\n"
+
+  fi
+fi
+
+## Logs for debugging saved to debug.log file ##
+(
+  printf "\nDate: %s\n" "$(date)"
+  printf "Username: %s\n" "$USER"
+  printf "Message:\n"
+  printf "  The %s\n" "${TARGET_SERVICE}"
+  printf "  has been selected as the target service.\n"
+  printf "  Running systemctl list-unit-files | grep -q ${TARGET_SERVICE} %s\n"
+  printf "  to check if the service is enabled or installed on this workstation\n"
+  printf "...\n"
+) >> "$LOG_DIR"/debug.log
+
+## Script now will check if selected service is enabled or installed on this machine ##
+if ! systemctl list-unit-files | grep -q "${TARGET_SERVICE}"
+then
+  # If selected service is not installed or enabled 
+  echo "The selected service ${TARGET_SERVICE} is not installed or it is not enabled on this workstation, further information can be found in ${LOG_DIR}/debug.log file"
   
-  (crontab -l; echo "SHELL=/bin/bash") | awk '!x[$0]++' | crontab -			# Add SHELL to crontab
-  (crontab -l; echo "PATH=/sbin:/bin:/usr/sbin:/usr/bin") | awk '!x[$0]++' | crontab -	# Add PATH to crontab
+  # Logs for debugging saved in debug.log file
+  (
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Error: Target service is not installed or enabled on this workstation\n"
+    printf "Message:\n"
+    printf "  systemctl list-unit-files | grep -q ${TARGET_SERVICE} %s\n"
+    printf "  returned code 1, it means that the ${TARGET_SERVICE} %s\n"
+    printf "  is not installed or is not enabled on this workstation.\n"
+    printf "Recommendation:"
+    printf "  Please spell check the service name you just typed or verify \n"
+    printf "  the list of installed services running the next command: systemctl --all --type service\n"
+    printf "Exit status: 1\n"
+  ) >> "$LOG_DIR"/debug.log
+  
+  # Exit script
+  exit 1
+
+else
+  # If selected service is installed or enabled
+  (
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message:\n"
+    printf "  systemctl list-unit-files | grep -q ${TARGET_SERVICE} %s\n"
+    printf "  returned code 0, it means that the ${TARGET_SERVICE} %s\n"
+    printf "  is installed/enabled on this workstation.\n"
+    printf "  Running systemctl show -p SubState --value ${TARGET_SERVICE} %s\n"
+    printf "  to check if ${TARGET_SERVICE} is Up/Started. %s\n"
+    printf "...\n"
+  ) >> "$LOG_DIR"/debug.log
+
+  # Now script will check if service is UP/Running
+  STATUS=$(systemctl show -p SubState --value "${TARGET_SERVICE}")
+  if [[ $STATUS != "running" ]]	
+  then
+    # If service is not running
+    (
+      printf "\nDate: %s\n" "$(date)"
+      printf "Username: %s\n" "$USER"
+      printf "Message: The ${TARGET_SERVICE} is Stopped/Inactive (dead) %s\n"
+      printf "Exit status: 0\n"
+    ) >> "$LOG_DIR"/debug.log
+  
+  else
+    # If service is running then
+    (
+      printf "\nDate: %s\n" "$(date)"
+      printf "Username: %s\n" "$USER"
+      printf "Message: The ${TARGET_SERVICE} is Runinng/Active %s\n"
+      printf "Exit status: 0\n"
+    ) >> "$LOG_DIR"/debug.log
+
+  fi
+
+  # To start logging target service status
+  ACTIVE_STATUS=$(systemctl status $TARGET_SERVICE | grep "Active")
+  MAIN_PID=$(systemctl status $TARGET_SERVICE | grep "Main PID")
+  LOGS=$(systemctl status --no-pager -l $TARGET_SERVICE | grep "systemd")
+
+  # Logs for debugging saved in debug.log file
+  (
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message:\n"
+    printf "  Starting gather status information about the %s${TARGET_SERVICE}\n"
+    printf "  Running: systemctl status %s$TARGET_SERVICE | grep 'Active'\n"
+    printf "    to get service status\n"
+    printf "  Running: systemctl status %s$TARGET_SERVICE | grep 'Main PID'\n"
+    printf "    to get service main process ID\n"
+    printf "  Running: systemctl status --no-pager -l %s$TARGET_SERVICE | grep 'systemd'\n"
+    printf "    to get service aditional information\n"
+    printf "Exit status: 0\n"
+  ) >> "$LOG_DIR"/debug.log
+
+  # Logs for logging saved in log-date file
+  # Logging information about the selected service
+  printf "\nDate: %s\n" "$(date)"
+  printf "Username: %s\n" "$USER"
+  printf "Service name: %s\n" "$TARGET_SERVICE"
+  printf "Active status: %s\n" "$ACTIVE_STATUS"
+  printf "Main Process ID: %s\n" "$MAIN_PID"
+  printf "Logs:\n"
+  printf "%s\n" "$LOGS"
+  printf "\n"
+
+  ## To add this script as a cronjob on crontab
+  # Add SHELL to crontab
+  (crontab -l; echo "SHELL=/bin/bash") | awk '!x[$0]++' | crontab -
+
+  # Add PATH to crontab
+  (crontab -l; echo "PATH=/sbin:/bin:/usr/sbin:/usr/bin") | awk '!x[$0]++' | crontab -
+
   # Add this script to crontab
   (crontab -l; echo "# To monitor target service $TARGET_SERVICE") | crontab -
   (crontab -l; echo "*/5 * * * * $FULL_PATH/$SCRIPT_NAME >> $LOG_DIR/log-$DATE 2>&1") | awk '!x[$0]++' | crontab -
-  
-  # Logs for debugging
-  printf "Log created on: $(date)\nUsername: $USER\nMessage: Adding the script ./job.sh as a cron job\nExit status: 0\n\n" >> $LOG_DIR/debug.log
-} # //end function create_cronjob
 
-create_cronjob					# We call this function to add this script as a cronjob on crontab
+  # Logs for debugging saved in debug.log file
+  (
+    printf "\nDate: %s\n" "$(date)"
+    printf "Username: %s\n" "$USER"
+    printf "Message:\n"
+    printf "  Adding this script %s./$SCRIPT_NAME as a cronjob\n"
+    printf "  To run every 5 minutes and gather information about the %s$TARGET_SERVICE\n"
+    printf "Exit status: 0\n"
+  ) >> "$LOG_DIR"/debug.log
+
+fi
 exit 0
