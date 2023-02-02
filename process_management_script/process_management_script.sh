@@ -39,13 +39,13 @@ LOG_DIR="${FULL_PATH}/logs"
 TARGET_SERVICE="httpd.service"			
 
 # Variable for log file name. e.g.: httpd.service-2022-09-30.log
-SERVICE_LOG_FILE="${TARGET_SERVICE}"-$(date +'%F').log
+SERVICE_LOG_FILE="${TARGET_SERVICE}-$(date +'%F').log"
 
 ## To create log directory and debug.log file ##
 # -p option is to override it is already created
-mkdir -p "${LOG_DIR}" && touch "${LOG_DIR}"/debug.log
+mkdir -p "${LOG_DIR}" && touch "${LOG_DIR}/debug.log"
 
-if [[ -d "${LOG_DIR}" ]]
+if [[ -d "${LOG_DIR}" ]];
 then
   # Go into the log directory just created
   # if cannot be access then exit
@@ -60,15 +60,13 @@ then
   ) >> debug.log
 else
   # Logs for debugging stored in debug.log file
-  (
-    printf "\nDate: %s\n" "$(date)"
-    printf "Username: %s\n" "${USER}"
-    printf "Error: \n" 
-    printf "  Unable to create log directory %s\n ${LOG_DIR}"
-    printf "Recommendation: \n"
-    printf "  Please check if you have proper permissions on the selected folder %s\n ${FULL_PATH}"
-    printf "Exit status: 1\n"
-  ) >> debug.log
+  printf "\nDate: %s\n" "$(date)"
+  printf "Username: %s\n" "${USER}"
+  printf "Error: \n" 
+  printf "  Unable to create log directory %s\n ${LOG_DIR}"
+  printf "Recommendation: \n"
+  printf "  Please check if you have proper permissions on the selected folder %s\n ${FULL_PATH}"
+  printf "Exit status: 1\n"
 
   # If there is an error creating directory script will exit with status 1
   exit 1
@@ -76,31 +74,29 @@ fi
 
 ## Then, script will create httpd.service-2022-09-30.log file ##
 # for logging information about selected target service
-## To create service log file ##
 if touch "${SERVICE_LOG_FILE}";
 then
   # Logs for debugging stored in debug.log file
   (
     printf "\n"
-    printf "  Log file %s\n" "${LOG_FILE}" 
+    printf "  Log file %s\n" "${SERVICE_LOG_FILE}"
     printf "  created successfully in the selected folder: \n"
     printf "  %s" "${LOG_DIR}"
     printf "\n"
   ) >> debug.log
 else
   # Logs for debugging stored in debug.log file
-  (
-    printf "\n"
-    printf "\nDate: %s\n" "$(date)"
-    printf "Username: %s\n" "${USER}"
-    printf "Error: \n"
-    printf "  Unable to create file %s\n" "${LOG_FILE}"
-    printf "Recommendation: \n"
-    printf "  Please check if you have proper permissions in the selected folder \n"
-    printf " %s" "${LOG_DIR}"
-    printf "\n"
-    printf "Exit status: 1\n"
-  ) >> debug.log
+  printf "\n"
+  printf "\nDate: %s\n" "$(date)"
+  printf "Username: %s\n" "${USER}"
+  printf "Error: \n"
+  printf "  Unable to create file %s\n" "${SERVICE_LOG_FILE}"
+  printf "Recommendation: \n"
+  printf "  Please check if you have proper permissions in the selected folder \n"
+  printf " %s" "${LOG_DIR}"
+  printf "\n"
+  printf "Exit status: 1\n"
+
   # If there is an error creating log file script will exit with status 1
   exit 1
 fi
@@ -199,7 +195,7 @@ printf "%s\n" "${LOGS}"
 # Add PATH to crontab
 (crontab -l; echo "PATH=/sbin:/bin:/usr/sbin:/usr/bin") | awk '!x[$0]++' | crontab -
 
-# Add this script to crontab
+# Add this script to crontab to run every 5 minutes
 (crontab -l; echo "# To monitor target service ${TARGET_SERVICE}") | crontab -
 (crontab -l; echo "*/5 * * * * $FULL_PATH/$SCRIPT_NAME >> ${LOG_DIR}/${SERVICE_LOG_FILE} 2>&1") | awk '!x[$0]++' | crontab -
 
