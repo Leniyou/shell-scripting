@@ -155,7 +155,8 @@ while true; do
       COUNT=$(( COUNT+1 ))
       if [[ $COUNT -eq ${#EXTENSIONS[@]} ]]; then
         ERROR_LOG="The page you have typed does not contain a valid extension file."
-        RECOMM_LOG="For this script to work you should provide an URL ending with
+        RECOMM_LOG="
+          For this script to work you should provide an URL ending with
           extensions: txt or sh, i.e. ${ITALIC}https://example.com/text.txt ${NO_FORMAT}
         "
         # -- Printing errors using function err() -- #
@@ -178,7 +179,8 @@ while true; do
     if [[ -d ${DIR} ]] && [[ -r ${DIR} ]]; then          
       slash_on_dir "${DIR}" || break
     else
-      ERROR_LOG="${ITALIC}${DIR}${NO_FORMAT} is ${RED}not a valid directory${NO_FORMAT}
+      ERROR_LOG="
+        ${ITALIC}${DIR}${NO_FORMAT} is ${RED}not a valid directory${NO_FORMAT}
         Or you don't have ${RED}READ permissions${NO_FORMAT} in this directory.
       "
       RECOMM_LOG="You should specified a new directory"
